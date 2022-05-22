@@ -1,7 +1,7 @@
 # Based on this paper: https://arxiv.org/abs/2205.04095
 # SmoothNets can be considered as:
 # (1) Wide 
-# (2) DenseNets with 
+# (2) DenseNets (w/o Bottlenecks) with 
 # (3) SELU activations and 
 # (4) DP-compatible normalization and max pooling
 
@@ -18,9 +18,7 @@ def getActivationFunction(
     ): 
     """
     This is a helper function to return all the different activation functions
-    we want to consider. This is written in a dedicated function because
-    it is called from different classes and because this is the central place
-    where all possible activation_fc are listed.
+    we want to consider. 
     """
     if activation_fc_str == "selu": 
         activation_fc = nn.SELU()
@@ -37,14 +35,10 @@ def getPoolingFunction(
         **kwargs
     ): 
     """
-    This is a helper function to return all the different after_conv_fcs
-    we want to consider. This is written in a dedicated function because
-    it is called from different classes and because this is the central place
-    where all possible after_conv_fct are listed.
+    This is a helper function to return all the different pooling operations.
 
     Args: 
-        after_conv_fc_str: str to select the specific function
-        num_features: number of channels, only necessary for norms 
+        pool_fc_str: str to select the specific function
 
     """
     if pool_fc_str == 'mxp': 
@@ -69,52 +63,37 @@ def getPoolingFunction(
     return pool_fc
 
 def getNormFunction(
-        norm_fc_str : str, 
+        norm_groups : int, 
         num_features : int,
         **kwargs
     ): 
     """
-    This is a helper function to return all the different after_conv_fcs
-    we want to consider. This is written in a dedicated function because
-    it is called from different classes and because this is the central place
-    where all possible after_conv_fct are listed.
+    This is a helper function to return all the different normalizations we want to consider. 
 
     Args: 
-        norm_fc_str: str to select the specific function
-        num_features: number of channels, only necessary for norms 
+        norm_groups: the number of normalization groups of GN, or to select IN, Identity, BN
+        num_features: number of channels
 
     """
-    if norm_fc_str == 'bn':
-        norm_fc = nn.BatchNorm2d(
-            num_features=num_features
-        )
-    elif norm_fc_str == 'gn':
-        # for num_groups = num_features => LayerNorm
-        # for num_groups = 1 => InstanceNorm
-        min_num_groups = 8
+    if norm_groups > 0:
+        # for num_groups = num_features => InstanceNorm
+        # for num_groups = 1 => LayerNorm
         norm_fc = nn.GroupNorm(
-            num_groups=min(min_num_groups, num_features), 
+            num_groups=min(norm_groups, num_features), 
             num_channels=num_features, 
             affine=True
         )
-    elif norm_fc_str == 'in':
-        # could also use GN with num_groups=num_channels
+    # extra cases: InstanceNorm, Identity (no norm), BatchNorm (not DP-compatible)
+    elif norm_groups == 0:
         norm_fc = nn.InstanceNorm2d(
             num_features=num_features,
         )
-    elif norm_fc_str == 'ln':
-        # could also use nn.LayerNorm, but we would need
-        # complete input dimension for that (possible but more work)
-        # after_conv_fc = nn.LayerNorm(
-        #     normalized_shape=input_shape[1:],
-        # )
-        norm_fc = nn.GroupNorm(
-            num_groups=1, 
-            num_channels=num_features, 
-            affine=True
-        )
-    elif norm_fc_str == 'identity': 
+    elif norm_groups == -1: 
         norm_fc = nn.Identity()
+    elif norm_groups == -2:
+        norm_fc = nn.BatchNorm2d(
+            num_features=num_features
+        )
     
     return norm_fc
 
@@ -128,10 +107,9 @@ class SmoothBlock(nn.Module):
     Args:
         in_channels: the number of channels (feature maps) of the incoming embedding
         out_channels: the number of channels after the first convolution
-        after_conv_fc_str: norm or pooling after Conv2D layer (BatchNorm2d, MaxPool, Identity)
+        pool_fc_str: selected pooling operation (mxp, avg, identity)
+        norm_groups: number of norm groups for group norm (or selected IN, BN)
         activation_fc_str: choose activation function
-        skip_depth: how much blocks skip connection should jump,
-            2 = default, 0 = no skip connections
         dsc: whether to use depthwise seperable convolutions or not
     """
 
@@ -140,7 +118,7 @@ class SmoothBlock(nn.Module):
         in_channels : int, 
         out_channels : int,
         pool_fc_str : str,
-        norm_fc_str : str,
+        norm_groups : int,
         activation_fc_str : str,
         dsc : bool = False,  
     ):
@@ -176,31 +154,30 @@ class SmoothBlock(nn.Module):
 
         # set post conv operations
         self.pooling = getPoolingFunction(pool_fc_str=pool_fc_str)
-        self.norm = getNormFunction(norm_fc_str=norm_fc_str, num_features=out_channels)
+        self.norm = getNormFunction(norm_groups=norm_groups, num_features=out_channels)
         self.activation_fcs = getActivationFunction(activation_fc_str)
 
 
     def forward(self, input):
-        # go through all triples expect last one
         out = input
         out = self.conv_layers(out)
-        # out = self.after_conv_fcs(out)
         out = self.pooling(out)
         out = self.norm(out)
         out = self.activation_fcs(out)
 
         return out
 
-class ResidualStack(nn.Module):
+class SmoothStack(nn.Module):
     """
-    Helper module to stack the different residual blocks. 
-    
+    Helper module to stack the different smooth blocks. 
+
     Args:
-        in_channels: The number of channels (feature maps) of the incoming embedding
-        out_channels: The number of channels after the first layer
-        after_conv_fc_str: norm or pooling after Conv2D layer (BatchNorm2d, MaxPool, Identity)
-        activation_fc_str: choose what activation function to use
-        num_blocks: Number of residual blocks
+        in_channels: the number of channels (feature maps) of the incoming embedding
+        out_channels: the number of channels after the first convolution
+        pool_fc_str: selected pooling operation (mxp, avg, identity)
+        norm_groups: number of norm groups for group norm (or selected IN, BN)
+        activation_fc_str: choose activation function
+        num_blocks: number of smooth blocks 
         dsc: whether to use depthwise seperable convolutions or not
     """
     
@@ -209,7 +186,7 @@ class ResidualStack(nn.Module):
         in_channels : int, 
         out_channels : int, 
         pool_fc_str : str,
-        norm_fc_str : str,
+        norm_groups : str,
         activation_fc_str : str,
         num_blocks : int, 
         dsc : bool
@@ -217,14 +194,13 @@ class ResidualStack(nn.Module):
         super().__init__()
 
         # first block to get the right number of channels (from previous block to current)
-        # and sample down if specified (specifically at the first layer in the ResidualBlock)
-        self.residual_stack = nn.ModuleList(
+        self.smooth_stack = nn.ModuleList(
             [
                 SmoothBlock(
                     in_channels=in_channels, 
                     out_channels=out_channels, 
                     pool_fc_str=pool_fc_str,
-                    norm_fc_str=norm_fc_str, 
+                    norm_groups=norm_groups, 
                     activation_fc_str=activation_fc_str,
                     dsc=dsc,
                 )
@@ -232,13 +208,13 @@ class ResidualStack(nn.Module):
         )
         
         # EXTEND adds array as elements of existing array, APPEND adds array as new element of array 
-        self.residual_stack.extend(
+        self.smooth_stack.extend(
             [
                 SmoothBlock(
                     in_channels=out_channels*i+in_channels, 
                     out_channels=out_channels, 
                     pool_fc_str=pool_fc_str,
-                    norm_fc_str=norm_fc_str,
+                    norm_groups=norm_groups,
                     activation_fc_str=activation_fc_str,
                     dsc=dsc,
                 ) 
@@ -248,26 +224,21 @@ class ResidualStack(nn.Module):
         
     def forward(self, input):
         out = input
-        for layer in self.residual_stack:
+        for layer in self.smooth_stack:
             temp = layer(out)
             # concatenate at channel dimension
             out = torch.cat((out, temp), 1)
         return out
 
-# NOTE: some differences to my manually crafted CNN (not just added skip connections)
-    # - downsampling is done with adaption of channels in first ConvBlock 
-    # - downsampling is done through Conv2d layer and not dedicated maxpool layer
-
 # TODO: make adaptive for MNIST (most assume dn RGB img with 3 channels)
 class SmoothNet(nn.Module):
     """
-    ConvNet that is based on stage 1 network of StageConvNet and where
-    depth (factor multiplied number of equal size conv blocks) and width 
-    (factor multiplied number of channels per conv block) can be changed seperately. 
-    By default depth and width are 1 which results in the stage 1 network of StafeConvNet.
+    The SmoothNet class. The v1 SmoothNets can be considered as: 
+    (1) Wide, (2) DenseNets (w/o Bottlenecks) with (3) SELU activations and (4) DP-compatible normalization and max pooling.
+
     Args: 
         pool_fc_str: set pooling operation after conv (or none)
-        norm_fc_str: set a normalization layer after conv(+pooling if set)
+        norm_groups: the number of groups to be used in the group normalization (0:=IN, -1:=ID, -2:=BN)
         activation_fc_str: choose activation function
         depth: a factor multiplied with number of conv blocks per stage of base model
         width: a factor multiplied with number of channels per conv block of base model
@@ -277,7 +248,7 @@ class SmoothNet(nn.Module):
     def __init__(
         self, 
         pool_fc_str : str = 'mxp',
-        norm_fc_str : str = 'gn',
+        norm_groups : int = 8,
         activation_fc_str : str = 'selu',
         in_channels: int = 3,
         depth: float = 1.0,
@@ -292,11 +263,11 @@ class SmoothNet(nn.Module):
         width_stage_zero = int(width*8)
         depth_stage_zero = int(depth*1)
 
-        self.stage_zero = ResidualStack(
+        self.stage_zero = SmoothStack(
             in_channels=in_channels,
             out_channels=width_stage_zero,
             pool_fc_str=pool_fc_str,
-            norm_fc_str=norm_fc_str,
+            norm_groups=norm_groups,
             activation_fc_str=activation_fc_str,
             num_blocks=depth_stage_zero, 
             dsc=dsc,
@@ -308,7 +279,7 @@ class SmoothNet(nn.Module):
         width_stage_one = int(width*16)
         depth_stage_one = int(depth*1)
         
-        # DenseTransition if using DenseBlocks #
+        # DenseTransition #
         # recalculate the number of input features 
         # depth_stage_zero (total num of blocks) + input channels (3 for CIFAR10)
         width_stage_zero = width_stage_zero * depth_stage_zero + 3
@@ -330,11 +301,11 @@ class SmoothNet(nn.Module):
         )
         width_stage_zero = width_stage_zero // 2
 
-        self.stage_one = ResidualStack(
+        self.stage_one = SmoothStack(
             in_channels=width_stage_zero,
             out_channels=width_stage_one,
             pool_fc_str=pool_fc_str,
-            norm_fc_str=norm_fc_str,
+            norm_groups=norm_groups,
             activation_fc_str=activation_fc_str,
             num_blocks=depth_stage_one, 
             dsc=dsc,
@@ -361,7 +332,7 @@ class SmoothNet(nn.Module):
     def forward(self, x):
         batch_size = x.shape[0]
         out = self.stage_zero(x)
-        # add dense transition layer if using dense connections; in this case
+        # with dense transition layer
         # no dim or feature reduction will happen in the stages themselves
         out = self.dense_transition(out)
         out = self.stage_one(out) 
@@ -382,11 +353,19 @@ class SmoothNet(nn.Module):
 def getSmoothNets(
         width: float = 8.0, 
         depth: float = 5.0,
+        norm_groups: int = 8,  # alternatives: 0:=IN, -1:=identity, -2:=BN
+        pool_fc_str: int = 'mxp', # alternatives: avg, identity
         **kwargs
     ): 
-    model = SmoothNet(width=width, depth=depth, **kwargs)
+    model = SmoothNet(
+        width=width, 
+        depth=depth, 
+        norm_groups=norm_groups, 
+        pool_fc_str=pool_fc_str,
+        **kwargs
+    )
     
-    # TODO: check if using jit can speed up the training
+    # NOTE: using jit can speed up the training
     # example = torch.randn(1, 3, 224, 224)
     # model_jit = torch.jit.trace(model, example)
     return model
