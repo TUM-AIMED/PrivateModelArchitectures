@@ -1,0 +1,18 @@
+name: pretrain
+channels: 
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies: 
+  - pytorch
+  - torchvision
+  - pytorch-cuda==11.7
+  - conda-forge::scikit-learn
+  - conda-forge::pandas
+  - conda-forge::wandb
+  - numpy
+  - pip
+  - pip: 
+    - tqdm 
+    - poutyne
+    - hydra-core

@@ -18,8 +18,7 @@ def conv_bn_act(
 
 
 def conv_gn_act(in_channels, out_channels, pool=False, act_func=nn.Mish, num_groups=32):
-    """Conv-GroupNorm-Activation
-    """
+    """Conv-GroupNorm-Activation"""
     layers = [
         nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False),
         nn.GroupNorm(min(num_groups, out_channels), out_channels),
@@ -36,7 +35,7 @@ class ResNet9(nn.Module):
         in_channels: int = 3,
         num_classes: int = 10,
         act_func: nn.Module = nn.Mish,
-        scale_norm: bool = False,
+        scale_norm: bool = True,
         norm_layer: str = "batch",
         num_groups: tuple[int, ...] = (32, 32, 32, 32),
     ):
