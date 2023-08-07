@@ -1,6 +1,8 @@
-from torch import nn
 import warnings
-
+from typing import Union
+from pathlib import Path
+from torch import nn, load
+from torchvision.datasets.utils import download_url
 
 def conv_bn_act(
     in_channels, out_channels, pool=False, act_func=nn.Mish, num_groups=None
@@ -38,6 +40,8 @@ class ResNet9(nn.Module):
         scale_norm: bool = True,
         norm_layer: str = "batch",
         num_groups: tuple[int, ...] = (32, 32, 32, 32),
+        use_pretrained_weights: bool = False,
+        root: Union[str, Path] = './'
     ):
         """9-layer Residual Network. Architecture:
         conv-conv-Residual(conv, conv)-conv-conv-Residual(conv-conv)-FC
@@ -111,6 +115,18 @@ class ResNet9(nn.Module):
         else:
             self.scale_norm_1 = nn.Identity()  # type:ignore
             self.scale_norm_2 = nn.Identity()  # type:ignore
+
+
+        if use_pretrained_weights:
+            assert in_channels == 3
+            assert num_classes == 165
+            assert scale_norm
+            assert norm_layer == 'group'
+            root = Path(root)
+            dl_path = 'https://syncandshare.lrz.de/dl/fi6PJUT8XcF2h51qH7kwgB/resnet9_radimagenet.pt'
+            download_url(dl_path, root=root)
+            state_dict = load(root / dl_path.split('/')[-1], map_location='cpu')
+            self.load_state_dict(state_dict)
 
     def forward(self, xb):
         out = self.conv1(xb)
