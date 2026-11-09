@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it as below, together with the paper
+  for each architecture you use (listed under references and in the README).
+title: PrivateModelArchitectures
+type: software
+authors:
+  - name: "AIMLAB, Technical University of Munich"
+repository-code: "https://github.com/TUM-AIMED/PrivateModelArchitectures"
+license: Apache-2.0
+version: 0.1.2
+references:
+  - type: conference-paper
+    title: "Differentially private training of residual networks with scale normalisation"
+    authors:
+      - family-names: Klause
+        given-names: Helena
+      - family-names: Ziller
+        given-names: Alexander
+      - family-names: Rueckert
+        given-names: Daniel
+      - family-names: Hammernik
+        given-names: Kerstin
+      - family-names: Kaissis
+        given-names: Georgios
+    year: 2022
+    conference:
+      name: "Theory and Practice of Differential Privacy (TPDP) Workshop at ICML 2022"
+    identifiers:
+      - type: other
+        value: "arXiv:2203.00324"
+    url: "https://arxiv.org/abs/2203.00324"
+  - type: article
+    title: "SmoothNets: Optimizing CNN architecture design for differentially private deep learning"
+    authors:
+      - family-names: Remerscheid
+        given-names: Nicolas W.
+      - family-names: Ziller
+        given-names: Alexander
+      - family-names: Rueckert
+        given-names: Daniel
+      - family-names: Kaissis
+        given-names: Georgios
+    year: 2022
+    identifiers:
+      - type: other
+        value: "arXiv:2205.04095"
+    url: "https://arxiv.org/abs/2205.04095"
