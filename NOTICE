@@ -17,7 +17,8 @@ If you use them in academic work, please cite the paper for each model you use:
   SmoothNet:
     N. W. Remerscheid, A. Ziller, D. Rueckert, G. Kaissis.
     "SmoothNets: Optimizing CNN architecture design for differentially private
-    deep learning." arXiv:2205.04095, 2022.
+    deep learning." Theory and Practice of Differential Privacy (TPDP)
+    Workshop at ICML 2022. arXiv:2205.04095.
 
 The Apache License 2.0 covers the source code in this repository only. The
 optional RadImageNet-pretrained ResNet9 weights, downloaded at runtime when

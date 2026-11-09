@@ -30,7 +30,7 @@ references:
       - type: other
         value: "arXiv:2203.00324"
     url: "https://arxiv.org/abs/2203.00324"
-  - type: article
+  - type: conference-paper
     title: "SmoothNets: Optimizing CNN architecture design for differentially private deep learning"
     authors:
       - family-names: Remerscheid
@@ -42,6 +42,8 @@ references:
       - family-names: Kaissis
         given-names: Georgios
     year: 2022
+    conference:
+      name: "Theory and Practice of Differential Privacy (TPDP) Workshop at ICML 2022"
     identifiers:
       - type: other
         value: "arXiv:2205.04095"

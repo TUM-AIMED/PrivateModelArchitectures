@@ -6,7 +6,7 @@ DP-SGD introduces challenges for CNN training. We collect models that are alread
 | Model | Task | Paper |
 |---|---|---|
 | `ResNet9` | Classification | Klause et al., TPDP 2022 ([arXiv:2203.00324](https://arxiv.org/abs/2203.00324)) |
-| `SmoothNet` | Classification | Remerscheid et al., 2022 ([arXiv:2205.04095](https://arxiv.org/abs/2205.04095)) |
+| `SmoothNet` | Classification | Remerscheid et al., TPDP 2022 ([arXiv:2205.04095](https://arxiv.org/abs/2205.04095)) |
 | `LinkNet9` | Segmentation | Klause et al., TPDP 2022 ([arXiv:2203.00324](https://arxiv.org/abs/2203.00324)) |
 | `UNet9` | Segmentation | Klause et al., TPDP 2022 ([arXiv:2203.00324](https://arxiv.org/abs/2203.00324)) |
 
@@ -24,11 +24,13 @@ If you use these models in academic work, please cite the paper for each archite
   archivePrefix = {arXiv}
 }
 
-@article{remerscheid2022smoothnets,
-  title   = {SmoothNets: Optimizing CNN architecture design for differentially private deep learning},
-  author  = {Remerscheid, Nicolas W. and Ziller, Alexander and Rueckert, Daniel and Kaissis, Georgios},
-  journal = {arXiv preprint arXiv:2205.04095},
-  year    = {2022}
+@inproceedings{remerscheid2022smoothnets,
+  title     = {SmoothNets: Optimizing CNN architecture design for differentially private deep learning},
+  author    = {Remerscheid, Nicolas W. and Ziller, Alexander and Rueckert, Daniel and Kaissis, Georgios},
+  booktitle = {Theory and Practice of Differential Privacy (TPDP) Workshop at ICML},
+  year      = {2022},
+  eprint    = {2205.04095},
+  archivePrefix = {arXiv}
 }
 ```
 
