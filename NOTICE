@@ -6,7 +6,8 @@ This product includes software developed at AIMLAB, Technical University of
 Munich (TUM).
 
 The architectures in this package come from the following publications.
-If you use them in academic work, please cite the paper for each model you use:
+If you use them in academic work, please consider citing the paper for each
+model you use:
 
   ResNet9, LinkNet9, UNet9:
     H. Klause, A. Ziller, D. Rueckert, K. Hammernik, G. Kaissis.

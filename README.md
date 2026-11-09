@@ -12,7 +12,7 @@ DP-SGD introduces challenges for CNN training. We collect models that are alread
 
 ## Citation
 
-If you use these models in academic work, please cite the paper for each architecture you use:
+If you use these models in academic work, please consider citing the paper for each architecture you use:
 
 ```bibtex
 @inproceedings{klause2022differentially,
