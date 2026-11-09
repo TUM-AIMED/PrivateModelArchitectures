@@ -1,0 +1,28 @@
+PrivateModelArchitectures
+Copyright 2023 AIMLAB, Technical University of Munich
+https://github.com/TUM-AIMED/PrivateModelArchitectures
+
+This product includes software developed at AIMLAB, Technical University of
+Munich (TUM).
+
+The architectures in this package come from the following publications.
+If you use them in academic work, please consider citing the paper for each
+model you use:
+
+  ResNet9, LinkNet9, UNet9:
+    H. Klause, A. Ziller, D. Rueckert, K. Hammernik, G. Kaissis.
+    "Differentially private training of residual networks with scale
+    normalisation." Theory and Practice of Differential Privacy (TPDP)
+    Workshop at ICML 2022. arXiv:2203.00324.
+
+  SmoothNet:
+    N. W. Remerscheid, A. Ziller, D. Rueckert, G. Kaissis.
+    "SmoothNets: Optimizing CNN architecture design for differentially private
+    deep learning." Theory and Practice of Differential Privacy (TPDP)
+    Workshop at ICML 2022. arXiv:2205.04095.
+
+The Apache License 2.0 covers the source code in this repository only. The
+optional RadImageNet-pretrained ResNet9 weights, downloaded at runtime when
+`use_pretrained_weights=True`, were trained on the RadImageNet dataset. They
+are not covered by this license and may be used for non-commercial research
+only, in line with the RadImageNet Research Use Agreement.
